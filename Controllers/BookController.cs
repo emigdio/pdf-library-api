@@ -5,7 +5,9 @@ using PdfLibraryApi.Models;
 [Route("api/books")]
 public class BooksController : ControllerBase
 {
-    private readonly string pdfPath = Path.Combine(Directory.GetCurrentDirectory(), "storage/pdfs");
+    private readonly string pdfPath =
+    Environment.GetEnvironmentVariable("PDF_LIBRARY_PATH")
+    ?? Path.Combine(Directory.GetCurrentDirectory(), "storage/pdfs");
 
     [HttpGet]
     public IActionResult GetBooks()
