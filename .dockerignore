@@ -3,7 +3,3 @@
 .git/
 .vscode/
 .DS_Store
-
-# No metas PDFs ni storage en la imagen
-storage/
-**/*.pdf
