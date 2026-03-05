@@ -34,3 +34,4 @@
 /Users/emigdiocamachocalderon/Documents/MySoftware/PdfLibraryApi/bin/Debug/net10.0/Swashbuckle.AspNetCore.Swagger.dll
 /Users/emigdiocamachocalderon/Documents/MySoftware/PdfLibraryApi/bin/Debug/net10.0/Swashbuckle.AspNetCore.SwaggerGen.dll
 /Users/emigdiocamachocalderon/Documents/MySoftware/PdfLibraryApi/bin/Debug/net10.0/Swashbuckle.AspNetCore.SwaggerUI.dll
+/Users/emigdiocamachocalderon/Documents/MySoftware/PdfLibraryApi/obj/Debug/net10.0/PdfLibraryApi.sourcelink.json
