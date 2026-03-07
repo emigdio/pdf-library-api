@@ -15,7 +15,7 @@ public sealed class R2Storage
         var secretKey = cfg["R2_SECRET_ACCESS_KEY"] ?? throw new Exception("Missing R2_SECRET_ACCESS_KEY");
 
         _bucket = cfg["R2_BUCKET"] ?? throw new Exception("Missing R2_BUCKET");
-        _prefix = cfg["R2_PREFIX"] ?? "books/";
+        _prefix = cfg["R2_PREFIX"] ?? "";
 
         var endpoint = $"https://{accountId}.r2.cloudflarestorage.com"; // R2 S3 endpoint :contentReference[oaicite:4]{index=4}
 
