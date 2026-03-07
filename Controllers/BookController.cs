@@ -1,39 +1,37 @@
 using Microsoft.AspNetCore.Mvc;
-using PdfLibraryApi.Models;
 
 [ApiController]
 [Route("api/books")]
 public class BooksController : ControllerBase
 {
-    private readonly string pdfPath =
-    Environment.GetEnvironmentVariable("PDF_LIBRARY_PATH")
-    ?? Path.Combine(Directory.GetCurrentDirectory(), "storage/pdfs");
+    private readonly R2Storage _r2;
 
+    public BooksController(R2Storage r2) => _r2 = r2;
+
+    // GET /api/books
     [HttpGet]
-    public IActionResult GetBooks()
+    public async Task<IActionResult> GetBooks(CancellationToken ct)
     {
-        var files = Directory.GetFiles(pdfPath);
+        var keys = await _r2.ListPdfKeysAsync(ct);
 
-        var books = files.Select(f => new Book
+        // Convierte "books/mi-libro.pdf" -> "mi-libro"
+        var books = keys.Select(k => new
         {
-            Id = Path.GetFileNameWithoutExtension(f),
-            Title = Path.GetFileNameWithoutExtension(f),
-            FileName = Path.GetFileName(f)
+            id = Path.GetFileNameWithoutExtension(k),
+            fileName = Path.GetFileName(k),
+            key = k
         });
 
         return Ok(books);
     }
 
-    [HttpGet("{id}")]
-    public IActionResult GetBook(string id)
+    // GET /api/books/{id}/file
+    [HttpGet("{id}/file")]
+    public IActionResult GetBookFile(string id)
     {
-        var file = Directory.GetFiles(pdfPath)
-            .FirstOrDefault(f => Path.GetFileNameWithoutExtension(f) == id);
+        var key = _r2.KeyForId(id);
 
-        if (file == null)
-            return NotFound();
-
-        var stream = System.IO.File.OpenRead(file);
-        return File(stream, "application/pdf");
+        var url = _r2.GetPresignedDownloadUrl(key, TimeSpan.FromMinutes(10));
+        return Redirect(url); // 302 hacia R2
     }
 }
