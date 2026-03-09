@@ -209,11 +209,9 @@ Cloudflare R2 provides **S3-compatible object storage** without egress fees, mak
 
 Future improvements could include:
 
-* Full text search inside PDFs
 * Metadata database (PostgreSQL)
 * Authentication
 * File uploads
-* Pagination
 * Caching layer
 
 ---
