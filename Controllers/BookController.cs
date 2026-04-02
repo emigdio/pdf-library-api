@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PdfLibraryApi.Data;
 using PdfLibraryApi.Models;
 using PDFtoImage;
