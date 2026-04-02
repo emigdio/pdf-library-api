@@ -153,12 +153,13 @@ public class BooksController : ControllerBase
     {
         // 1. Obtener todas las llaves (keys) de los archivos actuales en R2
         var allKeys = await _r2.ListPdfKeysAsync(ct); 
+        var existingKeys = new HashSet<string>(await _context.Books.Select(b => b.PdfKey).ToListAsync(ct));
         int processedCount = 0;
 
         foreach (var key in allKeys)
         {
-            // Si ya existe en la DB por su nombre de archivo, lo saltamos para no duplicar
-            if (_context.Books.Any(b => b.PdfKey == key)) continue;
+            // Si ya existe en la DB por su Key, lo saltamos (consulta ultra rápida en memoria)
+            if (existingKeys.Contains(key)) continue;
 
             try 
             {
