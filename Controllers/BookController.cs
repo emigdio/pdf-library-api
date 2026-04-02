@@ -163,9 +163,13 @@ public class BooksController : ControllerBase
 
             try 
             {
-                // 2. Descargar el archivo a memoria temporalmente
-                using var pdfStream = await _r2.DownloadFileAsync(key, ct);
-                if (pdfStream == null) continue;
+                // 2. Descargar el archivo a un MemoryStream temporalmente (requerido para buscar / leer metadata)
+                using var responseStream = await _r2.DownloadFileAsync(key, ct);
+                if (responseStream == null) continue;
+
+                using var pdfStream = new MemoryStream();
+                await responseStream.CopyToAsync(pdfStream, ct);
+                pdfStream.Position = 0;
 
                 // 3. Extraer Metadatos (PdfPig)
                 using var document = UglyToad.PdfPig.PdfDocument.Open(pdfStream);
