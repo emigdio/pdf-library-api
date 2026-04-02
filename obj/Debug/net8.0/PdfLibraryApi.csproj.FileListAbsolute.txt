@@ -1,9 +1,0 @@
-/Users/emigdiocamachocalderon/Documents/MySoftware/PdfLibraryApi/obj/Debug/net8.0/PdfLibraryApi.csproj.AssemblyReference.cache
-/Users/emigdiocamachocalderon/Documents/MySoftware/PdfLibraryApi/obj/Debug/net8.0/rpswa.dswa.cache.json
-/Users/emigdiocamachocalderon/Documents/MySoftware/PdfLibraryApi/obj/Debug/net8.0/PdfLibraryApi.GeneratedMSBuildEditorConfig.editorconfig
-/Users/emigdiocamachocalderon/Documents/MySoftware/PdfLibraryApi/obj/Debug/net8.0/PdfLibraryApi.AssemblyInfoInputs.cache
-/Users/emigdiocamachocalderon/Documents/MySoftware/PdfLibraryApi/obj/Debug/net8.0/PdfLibraryApi.AssemblyInfo.cs
-/Users/emigdiocamachocalderon/Documents/MySoftware/PdfLibraryApi/obj/Debug/net8.0/PdfLibraryApi.csproj.CoreCompileInputs.cache
-/Users/emigdiocamachocalderon/Documents/MySoftware/PdfLibraryApi/obj/Debug/net8.0/PdfLibraryApi.MvcApplicationPartsAssemblyInfo.cs
-/Users/emigdiocamachocalderon/Documents/MySoftware/PdfLibraryApi/obj/Debug/net8.0/PdfLibraryApi.MvcApplicationPartsAssemblyInfo.cache
-/Users/emigdiocamachocalderon/Documents/MySoftware/PdfLibraryApi/obj/Debug/net8.0/PdfLibraryApi.sourcelink.json
