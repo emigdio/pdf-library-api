@@ -10,4 +10,8 @@ public class Book
     public string? ThumbnailKey { get; set; }
     public string PdfKey { get; set; } = string.Empty; // Ruta de la imagen en R2
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    [NotMapped]
+    public string? ThumbnailUrl { get; set; }
+    [NotMapped]
+    public string? DownloadUrl { get; set; }
 }
