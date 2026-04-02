@@ -69,5 +69,37 @@ public sealed class R2Storage
         return _s3.GetPreSignedURL(req);
     }
 
+    public async Task<Stream> DownloadFileAsync(string key, CancellationToken ct)
+    {
+        var request = new GetObjectRequest
+        {
+            BucketName = _bucket,
+            Key = key
+        };
+        var response = await _s3.GetObjectAsync(request, ct);
+        return response.ResponseStream; // Retorna el contenido del PDF
+    }
+
+    public async Task<string> UploadStreamAsync(string key, Stream stream, string contentType, CancellationToken ct = default)
+    {
+        var request = new PutObjectRequest
+        {
+            BucketName = _bucket, // El nombre de tu bucket de R2
+            Key = key,                // La ruta (ej: "thumbnails/archivo.png")
+            InputStream = stream,      // El flujo de datos
+            ContentType = contentType, // Importante para que el navegador sepa qué es (image/png, application/pdf)
+            DisablePayloadSigning = true // Requerido por R2 para subidas directas
+        };
+
+        var response = await _s3.PutObjectAsync(request, ct);
+
+        if (response.HttpStatusCode == System.Net.HttpStatusCode.OK)
+        {
+            return key;
+        }
+
+        throw new Exception($"Error al subir el archivo {key} a R2");
+    }
+
     public string KeyForId(string id) => $"{_prefix}{id}.pdf";
 }

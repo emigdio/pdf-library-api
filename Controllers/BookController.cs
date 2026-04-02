@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using PdfLibraryApi.Data;
 using PdfLibraryApi.Models;
+using PDFtoImage;
+using UglyToad;
 
 namespace PdfLibraryApi.Controllers;
 
@@ -8,10 +11,27 @@ namespace PdfLibraryApi.Controllers;
 public class BooksController : ControllerBase
 {
     private readonly R2Storage _r2;
+    private readonly AppDbContext _context;
 
-    public BooksController(R2Storage r2)
+    public BooksController(R2Storage r2, AppDbContext context)
     {
         _r2 = r2;
+        _context = context;
+    }
+
+    private byte[] GeneratePdfThumbnail(Stream pdfStream)
+    {
+        // Reiniciamos la posición del stream por si fue leído antes
+        pdfStream.Position = 0;
+
+        // Convertimos la primera página (índice 0) a una imagen PNG
+        // No necesitas inicializar librerías complejas, es un método estático
+        using var outputStream = new MemoryStream();
+        
+        // Genera la imagen de la página 0 con una resolución de 96 DPI (ideal para miniaturas)
+        Conversion.SavePng(outputStream, pdfStream, page: 0);
+
+        return outputStream.ToArray();
     }
 
     [HttpGet]
@@ -82,4 +102,106 @@ public class BooksController : ControllerBase
 
         return Redirect(url);
     }
+
+    [HttpPost("upload")]
+    public async Task<IActionResult> UploadBook(IFormFile file)
+    {
+        if (file == null || file.Length == 0) return BadRequest("No se proporcionó un archivo.");
+
+        using var stream = file.OpenReadStream();
+        
+        // 1. EXTRAER METADATOS (PdfPig)
+        using var document = UglyToad.PdfPig.PdfDocument.Open(stream);
+        var info = document.Information;
+        var pageCount = document.NumberOfPages;
+        var title = info.Title ?? Path.GetFileNameWithoutExtension(file.FileName);
+
+        // 2. GENERAR MINIATURA (DocLib)
+        stream.Position = 0; // Reiniciar el puntero del stream
+        byte[] thumbnailBytes = GeneratePdfThumbnail(stream);
+
+        // 3. SUBIR PDF A R2
+        var pdfKey = $"books/{Guid.NewGuid()}_{file.FileName}";
+        stream.Position = 0;
+        await _r2.UploadStreamAsync(pdfKey, stream, file.ContentType);
+
+        // 4. SUBIR MINIATURA A R2
+        var thumbKey = $"thumbnails/{Path.GetFileNameWithoutExtension(pdfKey)}.png";
+        using var thumbStream = new MemoryStream(thumbnailBytes);
+        await _r2.UploadStreamAsync(thumbKey, thumbStream, "image/png");
+
+        var newBook = new Book {
+            Id = Guid.NewGuid().ToString(),
+            FileName = file.FileName,
+            Title = title,         // Extraído del PDF
+            Author = info.Author,       // Extraído del PDF
+            PageCount = document.NumberOfPages,     // Extraído del PDF
+            ThumbnailKey = thumbKey,
+            PdfKey = pdfKey
+        };
+
+        // GUARDAR EN SQLITE
+        _context.Books.Add(newBook);
+        await _context.SaveChangesAsync();
+
+        return Ok(newBook);
+    }
+
+    [HttpPost("sync-from-r2")]
+    public async Task<IActionResult> SyncBooksFromR2(CancellationToken ct)
+    {
+        // 1. Obtener todas las llaves (keys) de los archivos actuales en R2
+        var allKeys = await _r2.ListPdfKeysAsync(ct); 
+        int processedCount = 0;
+
+        foreach (var key in allKeys)
+        {
+            // Si ya existe en la DB por su nombre de archivo, lo saltamos para no duplicar
+            if (_context.Books.Any(b => b.PdfKey == key)) continue;
+
+            try 
+            {
+                // 2. Descargar el archivo a memoria temporalmente
+                using var pdfStream = await _r2.DownloadFileAsync(key, ct);
+                if (pdfStream == null) continue;
+
+                // 3. Extraer Metadatos (PdfPig)
+                using var document = UglyToad.PdfPig.PdfDocument.Open(pdfStream);
+                var info = document.Information;
+                
+                // 4. Generar Miniatura (DocLib)
+                pdfStream.Position = 0;
+                byte[] thumbBytes = GeneratePdfThumbnail(pdfStream); // El método que definimos antes
+                
+                // 5. Subir la miniatura generada a R2
+                var thumbKey = $"thumbnails/{Path.GetFileNameWithoutExtension(key)}.png";
+                using var thumbStream = new MemoryStream(thumbBytes);
+                await _r2.UploadStreamAsync(thumbKey, thumbStream, "image/png");
+
+                // 6. Registrar en la Base de Datos SQLite
+                var book = new Book
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    FileName = Path.GetFileName(key),
+                    Title = info.Title ?? Path.GetFileNameWithoutExtension(key),
+                    Author = info.Author,
+                    PageCount = document.NumberOfPages,
+                    PdfKey = key,
+                    ThumbnailKey = thumbKey
+                };
+
+                _context.Books.Add(book);
+                processedCount++;
+            }
+            catch (Exception ex)
+            {
+                // Log de error por si un PDF está corrupto o protegido
+                Console.WriteLine($"Error procesando {key}: {ex.Message}");
+            }
+        }
+
+        await _context.SaveChangesAsync(ct);
+        return Ok(new { Message = $"Sincronización completada. Se añadieron {processedCount} libros." });
+    }
+
 }
