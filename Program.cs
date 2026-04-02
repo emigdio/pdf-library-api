@@ -10,8 +10,9 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<R2Storage>();
 
+var dbPath = Environment.GetEnvironmentVariable("DB_PATH") ?? "library.db";
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=library.db"));
+    options.UseSqlite($"Data Source={dbPath}"));
 
 var app = builder.Build();
 

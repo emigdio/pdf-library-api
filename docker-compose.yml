@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  api:
+    build: 
+      context: .
+      dockerfile: dockerfile
+    container_name: pdflibrary_api
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      # La variable DB_PATH ya está definida en el dockerfile, pero puedes sobreescribirla aquí si quisieras
+    volumes:
+      - pdflibrary_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  pdflibrary_data:
+    name: pdflibrary_data
