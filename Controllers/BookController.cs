@@ -42,43 +42,43 @@ public class BooksController : ControllerBase
         [FromQuery] string? search = null,
         CancellationToken ct = default)
     {
-        if (page < 1)
-            page = 1;
+        // 1. Limpieza de parámetros de paginación
+        page = page < 1 ? 1 : page;
+        pageSize = Math.Clamp(pageSize, 1, 50);
 
-        if (pageSize < 1)
-            pageSize = 10;
+        // 2. Consulta a la Base de Datos (en lugar de listar R2)
+        var query = _context.Books.AsQueryable();
 
-        if (pageSize > 50)
-            pageSize = 50;
-
-        var keys = await _r2.ListPdfKeysAsync(ct);
-
-        IEnumerable<Book> booksQuery = keys.Select(k => new Book
-        {
-            Id = Path.GetFileNameWithoutExtension(k),
-            FileName = Path.GetFileName(k)
-        });
-
+        // 3. Filtro de búsqueda (ahora busca en Título, Autor y Nombre de Archivo)
         if (!string.IsNullOrWhiteSpace(search))
         {
-            booksQuery = booksQuery.Where(b =>
-                b.FileName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                b.Id.Contains(search, StringComparison.OrdinalIgnoreCase));
+            query = query.Where(b => 
+                (b.Title != null && b.Title.Contains(search)) || 
+                (b.Author != null && b.Author.Contains(search)) ||
+                b.FileName.Contains(search));
         }
 
-        var books = booksQuery
-            .OrderBy(b => b.FileName)
-            .ToList();
-
-        var totalItems = books.Count;
-        var totalPages = totalItems == 0
-            ? 0
-            : (int)Math.Ceiling(totalItems / (double)pageSize);
-
-        var items = books
+        // 4. Paginación y ejecución de la consulta
+        var totalItems = await query.CountAsync(ct);
+        var items = await query
+            .OrderByDescending(b => b.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ToList();
+            .ToListAsync(ct);
+
+        // 5. GENERAR URLS FIRMADAS para cada libro
+        // Esto permite que el navegador vea la imagen y descargue el PDF
+        foreach (var book in items)
+        {
+            // URL para la miniatura (válida por 30 minutos)
+            if (!string.IsNullOrEmpty(book.ThumbnailKey))
+            {
+                book.ThumbnailUrl = _r2.GetPresignedDownloadUrl(book.ThumbnailKey, TimeSpan.FromMinutes(30));
+            }
+
+            // URL para descargar el PDF (válida por 10 minutos)
+            book.DownloadUrl = _r2.GetPresignedDownloadUrl(book.PdfKey, TimeSpan.FromMinutes(10));
+        }
 
         var result = new PagedResult<Book>
         {
@@ -86,8 +86,8 @@ public class BooksController : ControllerBase
             Page = page,
             PageSize = pageSize,
             TotalItems = totalItems,
-            TotalPages = totalPages,
-            HasNextPage = page < totalPages,
+            TotalPages = (int)Math.Ceiling(totalItems / (double)pageSize),
+            HasNextPage = page * pageSize < totalItems,
             HasPreviousPage = page > 1
         };
 
