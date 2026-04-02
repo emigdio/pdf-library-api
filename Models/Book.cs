@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace PdfLibraryApi.Models;
 
 public class Book
