@@ -27,6 +27,10 @@ if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("post
         Password = userInfo.Length > 1 ? userInfo[1] : "",
         Database = uri.AbsolutePath.TrimStart('/')
     };
+    
+    // Supabase requiere conexiones seguras por SSL
+    npgsqlBuilder.SslMode = Npgsql.SslMode.Require;
+
     connectionString = npgsqlBuilder.ToString();
 }
 
