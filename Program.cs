@@ -14,6 +14,22 @@ builder.Services.AddSingleton<R2Storage>();
 var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") 
     ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
+// Si la cadena de conexión viene en formato URI (postgres://...) la parseamos a ADO.NET
+if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("postgres", StringComparison.OrdinalIgnoreCase))
+{
+    var uri = new Uri(connectionString);
+    var userInfo = uri.UserInfo.Split(':');
+    var npgsqlBuilder = new Npgsql.NpgsqlConnectionStringBuilder
+    {
+        Host = uri.Host,
+        Port = uri.IsDefaultPort ? 5432 : uri.Port,
+        Username = userInfo[0],
+        Password = userInfo.Length > 1 ? userInfo[1] : "",
+        Database = uri.AbsolutePath.TrimStart('/')
+    };
+    connectionString = npgsqlBuilder.ToString();
+}
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
