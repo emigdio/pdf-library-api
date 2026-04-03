@@ -10,9 +10,12 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<R2Storage>();
 
-var dbPath = Environment.GetEnvironmentVariable("DB_PATH") ?? "library.db";
+// Leer la cadena de conexión priorizando las variables de entorno de Render
+var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") 
+    ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite($"Data Source={dbPath}"));
+    options.UseNpgsql(connectionString));
 
 var app = builder.Build();
 

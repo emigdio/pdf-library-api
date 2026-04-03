@@ -10,11 +10,5 @@ services:
       - "8080:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      # La variable DB_PATH ya está definida en el dockerfile, pero puedes sobreescribirla aquí si quisieras
-    volumes:
-      - pdflibrary_data:/app/data
+      - DB_CONNECTION_STRING=${DB_CONNECTION_STRING}
     restart: unless-stopped
-
-volumes:
-  pdflibrary_data:
-    name: pdflibrary_data
